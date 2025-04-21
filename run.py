@@ -1,6 +1,6 @@
 import os
 import argparse
-from utils import prepare_data, train_model, calculate_metrics
+from utils import prepare_data, train_model_and_calculate_metrics
 
 
 ROOT_PATH = os.path.dirname(__file__)
@@ -18,15 +18,10 @@ if __name__ == '__main__':
         root_path_to_data=DATA_PATH,
         data_type=args.data_type
     )
-    train_model(
+    train_model_and_calculate_metrics(
         root_path_to_data=DATA_PATH,
         data_type=args.data_type,
         sampler_type=args.sampler_type,
-        root_path_to_models=MODELS_PATH
-    )
-    calculate_metrics(
         root_path_to_models=MODELS_PATH,
-        data_type=args.data_type,
-        sampler_type=args.sampler_type,
         root_path_to_metrics=METRICS_PATH
     )

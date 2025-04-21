@@ -2,3 +2,8 @@ env/
 **/__pycache__/**
 .idea/
 data/**/raw_data/**
+**/catboost_info/**
+metrics/**
+!metrics/.gitkeep
+models/**
+!models/.gitkeep
