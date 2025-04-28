@@ -2,3 +2,6 @@ pandas
 scikit-learn
 catboost
 optuna
+numpy
+torch
+faiss-cpu
