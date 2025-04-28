@@ -13,11 +13,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-type')
     parser.add_argument('--sampler-type')
+    parser.add_argument('--use-raw-data', action='store_false')
     args = parser.parse_args()
-    prepare_data(
-        root_path_to_data=DATA_PATH,
-        data_type=args.data_type
-    )
+    if args.use_raw_data:
+        prepare_data(
+            root_path_to_data=DATA_PATH,
+            data_type=args.data_type
+        )
     train_model_and_calculate_metrics(
         root_path_to_data=DATA_PATH,
         data_type=args.data_type,
