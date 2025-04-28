@@ -3,6 +3,8 @@ from random import sample, seed
 
 
 class AbstractSampler(ABC):
+    def __init__(self, *args, **kwargs):
+        pass
 
     @abstractmethod
     def __call__(self, x, y, weight, *args, **kwargs):
@@ -10,17 +12,11 @@ class AbstractSampler(ABC):
 
 
 class BaseSampler(AbstractSampler):
-    def __init__(self):
-        pass
-
     def __call__(self, x, y, weight, *args, **kwargs):
         return x, y, weight
 
 
 class IndexSampler(AbstractSampler):
-    def __init__(self):
-        pass
-
     def __call__(self, x, y, weight, *args, **kwargs):
         index = kwargs["index"]
         return x[index], y[index], weight[index]

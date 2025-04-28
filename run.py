@@ -13,7 +13,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-type')
     parser.add_argument('--sampler-type')
-    parser.add_argument('--use-raw-data', action='store_false')
+    parser.add_argument('--use-raw-data', action='store_true')
     args = parser.parse_args()
     if args.use_raw_data:
         prepare_data(

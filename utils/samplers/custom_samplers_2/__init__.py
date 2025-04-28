@@ -1,5 +1,5 @@
 import numpy as np
-from src.samplers import AbstractSampler, IndexSampler
+from ..base import AbstractSampler, IndexSampler
 
 class ShapleySampler(AbstractSampler):
     def __init__(self, X_test, y_test, num_samples=100):
