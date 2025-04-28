@@ -1,9 +1,9 @@
-from ...samplers import AbstractSampler
-from ..custom_samplers_1 import InfluenceSampler
-from fast_influence.nn_utils import compute_influences
-from fast_influence.faiss_utils import FAISSIndex
+from ..base import AbstractSampler, IndexSampler
+from .fast_influence.nn_utils import compute_influences
+from .fast_influence.faiss_utils import FAISSIndex
 import numpy as np
 import torch
+from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.data.sampler import SequentialSampler, RandomSampler
 import time
@@ -27,9 +27,52 @@ def get_dataloader(x, y, batch_size=1, random=False):
     return DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
 
+class InfluenceSampler(AbstractSampler):
+    def __init__(self, num_samples: int):
+        self.index_sampler = IndexSampler()
+        self.num_samples = num_samples
+
+    def __call__(self, x, y, weight, *args, **kwargs):
+        if x.shape[0] != y.shape[0] or x.shape[0] != weight.shape[0]:
+            raise ValueError
+
+        influences = kwargs["influences"]
+        index = sorted(range(x.shape[0]), key=lambda j: influences[j])[:self.num_samples]
+
+        return self.index_sampler(x, y, weight, index=index)
+
+
+class Net(nn.Module):
+    def __init__(self, in_features: int):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_features=in_features, out_features=64),
+            nn.Sigmoid(),
+            nn.Linear(in_features=64, out_features=128),
+            nn.Sigmoid(),
+            nn.Linear(in_features=128, out_features=512),
+            nn.Sigmoid(),
+            nn.Linear(in_features=512, out_features=2048),
+            nn.Sigmoid(),
+            nn.Linear(in_features=2048, out_features=512),
+            nn.Sigmoid(),
+            nn.Linear(in_features=512, out_features=128),
+            nn.Sigmoid(),
+            nn.Linear(in_features=128, out_features=128),
+            nn.Sigmoid(),
+            nn.Linear(in_features=128, out_features=128),
+            nn.Sigmoid(),
+            nn.Linear(in_features=128, out_features=1),
+        )
+
+    def forward(self, x):
+        logits = self.net(x)
+        return logits
+
+
 class FastIFSampler(AbstractSampler):
-    def __init__(self, num_samples: int, model):
-        self.model = model
+    def __init__(self, num_samples: int):
+        self.model = Net(in_features=13)  # HERE WILL BE THE TRAINED MODEL!!!
         self.sampler = InfluenceSampler(num_samples)
         self.num_samples = num_samples
 

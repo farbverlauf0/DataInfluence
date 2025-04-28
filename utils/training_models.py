@@ -5,13 +5,14 @@ from catboost import CatBoostRegressor
 import optuna
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
-from .samplers import BaseSampler, RandomSampler
+from .samplers import BaseSampler, RandomSampler, FastIFSampler
 
 
 SEED = 0
 SAMPLERS = {
     'base': BaseSampler,
-    'random': RandomSampler
+    'random': RandomSampler,
+    'fastif': FastIFSampler
 }
 
 
@@ -26,7 +27,14 @@ def train_model_and_calculate_metrics(root_path_to_data: str, data_type: str, sa
         raise ValueError('Select the right sampler')
     num_samples = int(len(x_train) * 0.1)
     sampler = SAMPLERS[sampler_type](num_samples=num_samples)
-    x_train, y_train, _ = sampler(x_train, y_train, np.ones_like(x_train))
+    ##### NEEDS FIX #####
+    kwargs = {}
+    if sampler_type == 'fastif':
+        kwargs['x_eval'] = x_train
+        kwargs['y_eval'] = y_train
+        kwargs['batch_size'] = 512
+    #####################
+    x_train, y_train, _ = sampler(x_train, y_train, weight=np.ones_like(x_train), **kwargs)
 
     def objective(trial):
         params = {
