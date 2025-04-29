@@ -1,18 +1,30 @@
 import numpy as np
+from pydvl.value import compute_shapley_values
+from pydvl.utils import Dataset, Utility
+from pydvl.value.shapley import ShapleyMode, MaxUpdates
+from sklearn.ensemble import HistGradientBoostingRegressor
 from ..base import AbstractSampler, IndexSampler
 
+
 class ShapleySampler(AbstractSampler):
-    def __init__(self, X_test, y_test, num_samples=100):
+    def __init__(self, num_samples):
         self.num_samples = num_samples
-        self.X_test = X_test
-        self.y_test = y_test
         self.index_sampler = IndexSampler()
-        self.sh_values = None
 
-    def __call__(self, X, y, sh_values, weight):
+    def __call__(self, x, y, weight, *args, **kwargs):
+        x_eval, y_eval = kwargs['x_eval'], kwargs['y_eval']
+        dataset = Dataset(x_train=x, y_train=y, x_test=x_eval, y_test=y_eval)
+        model = HistGradientBoostingRegressor(max_iter=50, max_depth=3)
+        utility = Utility(model, dataset)
 
-        self.sh_values = sh_values
+        shapley_values_tmc = compute_shapley_values(
+            utility,
+            mode=ShapleyMode.TruncatedMontecarlo,
+            done=MaxUpdates(10),
+            n_jobs=1,
+            progress=True
+        )
 
-        indices = np.argsort(sh_values.values)[-self.num_samples:]
+        indices = np.argsort(shapley_values_tmc.values)[-self.num_samples:]
 
-        return self.index_sampler(X, y, weight, index=indices)
+        return self.index_sampler(x, y, weight, index=indices)

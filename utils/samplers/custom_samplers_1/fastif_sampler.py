@@ -90,7 +90,7 @@ class FastIFSampler(AbstractSampler):
         instance_train_data_loader = get_dataloader(x, y, batch_size=1, random=False)
         eval_instance_data_loader = get_dataloader(x_eval, y_eval, batch_size=1, random=False)
         # number of test (validation) points for which Influence Function will be calculated
-        num_examples_to_test = kwargs["num_examples_to_test"] if "num_examples_to_test" in kwargs else x.shape[0] // 4
+        num_examples_to_test = kwargs["num_examples_to_test"] if "num_examples_to_test" in kwargs else x_eval.shape[0]  #  // 4
         # number of batches on which hvp is calculated
         s_test_num_samples = min(x.shape[0] // kwargs["batch_size"] - 1, 1000)
 

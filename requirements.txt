@@ -5,3 +5,4 @@ optuna
 numpy
 torch
 faiss-cpu
+pyDVL
