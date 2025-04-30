@@ -13,6 +13,8 @@ def get_loss_with_weight_decay(
         inputs: Tuple[torch.tensor, torch.tensor],
 ) -> float:
 
+    if torch.cuda.is_available():
+        inputs = inputs[0].cuda(), inputs[1].cuda()
     outputs = model(inputs[0])
     loss = ((inputs[1] - outputs)**2).mean()
 

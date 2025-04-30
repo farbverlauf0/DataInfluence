@@ -3,10 +3,12 @@ from .fast_influence.nn_utils import compute_influences
 from .fast_influence.faiss_utils import FAISSIndex
 import numpy as np
 import torch
-from torch import nn
+from torch import nn, optim
 from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.data.sampler import SequentialSampler, RandomSampler
 import time
+from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 def get_dataset(x, y):
@@ -25,6 +27,51 @@ def get_dataloader(x, y, batch_size=1, random=False):
         sampler = SequentialSampler(dataset)
 
     return DataLoader(dataset, batch_size=batch_size, sampler=sampler)
+
+
+def train_nn(net, train_loader, x_eval, y_eval, num_epochs, learning_rate, loss_function=None):
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    loss_hist = []
+    eval_hist = []
+    if loss_function is None:
+        loss_function = nn.MSELoss()
+
+    with tqdm(total=len(train_loader) * num_epochs, position=0, leave=True) as pbar:
+
+        for epoch in range(1, num_epochs + 1):
+            running_loss = 0.0
+
+            net.train()
+            for batch_num, (inputs, targets) in enumerate(train_loader):
+                optimizer.zero_grad()
+
+                if torch.cuda.is_available():
+                    inputs = inputs.cuda()
+                    targets = targets.cuda()
+                outputs = net(inputs)
+                loss = loss_function(outputs, targets)
+
+                loss.backward()
+                optimizer.step()
+
+                running_loss += loss.item()
+
+                pbar.set_description("Epoch: %d, Batch: %2d, Loss: %.2f" % (epoch, batch_num, running_loss))
+                pbar.update()
+            loss_hist.append(running_loss / len(train_loader))
+            net.eval()
+            with torch.no_grad():
+                x_eval, y_eval = torch.tensor(x_eval, dtype=torch.float32), torch.tensor(y_eval)
+                if torch.cuda.is_available():
+                    x_eval = x_eval.cuda()
+                    y_eval = y_eval.cuda()
+                eval_hist.append(loss_function(net(x_eval), y_eval).item())
+        pbar.close()
+
+    plt.plot(range(len(loss_hist)), loss_hist)
+    plt.plot(range(len(eval_hist)), eval_hist)
+    plt.show()
+    # return loss_hist, eval_hist
 
 
 class InfluenceSampler(AbstractSampler):
@@ -73,6 +120,8 @@ class Net(nn.Module):
 class FastIFSampler(AbstractSampler):
     def __init__(self, num_samples: int):
         self.model = Net(in_features=13)  # HERE WILL BE THE TRAINED MODEL!!!
+        if torch.cuda.is_available():
+            self.model = self.model.cuda()
         self.sampler = InfluenceSampler(num_samples)
         self.num_samples = num_samples
 
@@ -93,6 +142,10 @@ class FastIFSampler(AbstractSampler):
         num_examples_to_test = kwargs["num_examples_to_test"] if "num_examples_to_test" in kwargs else x_eval.shape[0]  #  // 4
         # number of batches on which hvp is calculated
         s_test_num_samples = min(x.shape[0] // kwargs["batch_size"] - 1, 1000)
+
+        num_epochs = kwargs['num_epochs']
+        learning_rate = kwargs['learning_rate']
+        train_nn(self.model, batch_train_data_loader, x_eval, y_eval, num_epochs, learning_rate)
 
         influences = np.zeros(shape=[num_examples_to_test, x.shape[0]])
         num_examples_tested = 0
@@ -134,7 +187,6 @@ class FastIFSampler(AbstractSampler):
                       (num_examples_tested, num_examples_to_test,
                        (time.time() - begin)*(num_examples_to_test-num_examples_tested))
                 )
-
 
         # IFs are calculated just for k nearest neighbors for each test instance so we have a lot of empty cells in
         # influence array. They are filled with -infinity so max function would ignore them. Sampler chooses

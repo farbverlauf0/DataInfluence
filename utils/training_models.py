@@ -34,15 +34,17 @@ def train_model_and_calculate_metrics(root_path_to_data: str, data_type: str, sa
         raise ValueError('Select the right sampler')
     num_samples = int(len(x_train) * 0.1)
     sampler = SAMPLERS[sampler_type](num_samples=num_samples)
-    ##### NEEDS FIX #####
+    # NEEDS FIX #
     kwargs = {}
     if sampler_type in ['fastif', 'shapley']:
-        kwargs['x_eval'] = x_test[:10]
-        kwargs['y_eval'] = y_test[:10]
-        kwargs['batch_size'] = 64
+        kwargs['x_eval'] = x_test[:1000]
+        kwargs['y_eval'] = y_test[:1000]
+        kwargs['num_epochs'] = 100
+        kwargs['learning_rate'] = 0.01
+        kwargs['batch_size'] = 256
         kwargs['use_knn'] = True
         kwargs['verbose'] = True
-    #####################
+    #############
     x_train, y_train, _ = sampler(x_train, y_train, weight=np.ones_like(x_train), **kwargs)
 
     def objective(trial):
