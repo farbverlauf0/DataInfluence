@@ -16,6 +16,7 @@ Available flags: `--data-type`, `--sampler-type` and `--use-raw-data`.
 
 
 After that, you can find the result metrics in `metrics` folder.
+Also you will get graphics for losses inside `graphics` folder if you use `--sampler-type all` mode.
 
 ## Creating custom objects
 In order to create your own sampler:
