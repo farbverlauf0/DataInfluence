@@ -62,7 +62,8 @@ def train_model_and_calculate_metrics(root_path_to_data: str, data_type: str, sa
     study = optuna.create_study(study_name=f'catboost-seed{SEED}', direction='maximize')
     study.optimize(objective, n_trials=30)
     model = CatBoostRegressor(**study.best_params)
-    model.fit(x_train, y_train)
+    model.fit(x_train, y_train, eval_set=(x_test, y_test), use_best_model=False)
+
     path_to_model = os.path.join(root_path_to_models, f'model_{data_type}_{sampler_type}')
     model.save_model(path_to_model)
 
@@ -72,3 +73,9 @@ def train_model_and_calculate_metrics(root_path_to_data: str, data_type: str, sa
     r2 = r2_score(y_test, y_pred)
     with open(os.path.join(root_path_to_metrics, f'metrics_{data_type}_{sampler_type}.txt'), 'w') as f:
         f.write(f'MSE: {mse}\nMAE: {mae}\nR2: {r2}')
+
+    evals_result = model.get_evals_result()
+    train_loss = evals_result['learn']['RMSE']
+    test_loss = evals_result['validation']['RMSE']
+
+    return {'train': train_loss, 'test': test_loss}

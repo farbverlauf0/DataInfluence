@@ -12,7 +12,7 @@ After setting up the environment, you can run the code using ```python run.py --
 Before doing this, check if your python environment is activated.
 Available flags: `--data-type`, `--sampler-type` and `--use-raw-data`.
 1. For `--data-type` flag, there is only one available value now: `zillow_prize`
-2. For `--sampler-type` flag, there are two available values now: `base` and `random`
+2. For `--sampler-type` flag, there are five available values now: `base`, `random`, `fastif`, `shapley` and `all`
 
 
 After that, you can find the result metrics in `metrics` folder.
