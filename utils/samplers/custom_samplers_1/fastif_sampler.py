@@ -8,7 +8,6 @@ from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.data.sampler import SequentialSampler, RandomSampler
 import time
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 
 def get_dataset(x, y):
@@ -68,10 +67,7 @@ def train_nn(net, train_loader, x_eval, y_eval, num_epochs, learning_rate, loss_
                 eval_hist.append(loss_function(net(x_eval), y_eval).item())
         pbar.close()
 
-    plt.plot(range(len(loss_hist)), loss_hist)
-    plt.plot(range(len(eval_hist)), eval_hist)
-    plt.show()
-    # return loss_hist, eval_hist
+    return loss_hist, eval_hist
 
 
 class InfluenceSampler(AbstractSampler):
