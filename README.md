@@ -10,9 +10,10 @@ How to set up the environment for launching the code?
 
 After setting up the environment, you can run the code using ```python run.py --flag_1 value_1 --flag_2 value_2 ... --flag_n value_n```.
 Before doing this, check if your python environment is activated.
-Available flags: `--data-type`, `--sampler-type` and `--use-raw-data`.
+Available flags: `--data-type`, `--noise-scaler`, `--sampler-type` and `--use-raw-data`.
 1. For `--data-type` flag, there is only one available value now: `zillow_prize`
 2. For `--sampler-type` flag, there are five available values now: `base`, `random`, `fastif`, `shapley` and `all`
+3. For `--noise-scaler` flag, you can specify any non-negative float number. If you don't use this flag or use 0.0 for it then no noise will be added to training data. A higher value adds more noise to the data. Now I recommend to use `--noise-scaler 0.5`
 
 
 After that, you can find the result metrics in `metrics` folder.
