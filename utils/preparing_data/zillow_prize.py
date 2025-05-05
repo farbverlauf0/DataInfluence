@@ -1,13 +1,15 @@
 import os
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 
 
 SEED = 0
+np.random.seed(SEED)
 TEST_SIZE = 0.1
 
 
-def prepare_zillow_prize(root_path_to_data: str):
+def prepare_zillow_prize(root_path_to_data: str, noise_scaler: float = 0.0):
     path_to_data = os.path.join(root_path_to_data, 'zillow_prize')
     path_to_raw_data = os.path.join(path_to_data, 'raw_data')
     objects = pd.read_csv(os.path.join(path_to_raw_data, 'properties_2016.csv'), low_memory=False)
@@ -31,6 +33,11 @@ def prepare_zillow_prize(root_path_to_data: str):
     ]
     data = data.drop(columns=drop_cols, errors='ignore')
     train_data, test_data = train_test_split(data, test_size=TEST_SIZE, random_state=SEED)
+
+    noise_std = train_data.std().to_numpy().reshape(1, -1)
+    noise = np.random.rand(*train_data.shape) * (noise_std * noise_scaler)
+    train_data = train_data + noise
+
     path_to_prepared_data = os.path.join(path_to_data, 'prepared_data')
     split_folder = os.path.join(path_to_prepared_data, 'split')
     if not os.path.exists(split_folder):

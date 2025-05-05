@@ -8,6 +8,7 @@ from ..base import AbstractSampler, IndexSampler
 
 class ShapleySampler(AbstractSampler):
     def __init__(self, num_samples):
+        super().__init__()
         self.num_samples = num_samples
         self.index_sampler = IndexSampler()
 
@@ -20,8 +21,8 @@ class ShapleySampler(AbstractSampler):
         shapley_values_tmc = compute_shapley_values(
             utility,
             mode=ShapleyMode.TruncatedMontecarlo,
-            done=MaxUpdates(10),
-            n_jobs=1,
+            done=MaxUpdates(3),
+            n_jobs=-1,
             progress=True
         )
 

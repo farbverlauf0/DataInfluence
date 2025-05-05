@@ -1,3 +1,5 @@
+import os.path
+
 from ..base import AbstractSampler, IndexSampler
 from .fast_influence.nn_utils import compute_influences
 from .fast_influence.faiss_utils import FAISSIndex
@@ -8,6 +10,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from torch.utils.data.sampler import SequentialSampler, RandomSampler
 import time
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 def get_dataset(x, y):
@@ -38,7 +41,7 @@ def train_nn(net, train_loader, x_eval, y_eval, num_epochs, learning_rate, loss_
     with tqdm(total=len(train_loader) * num_epochs, position=0, leave=True) as pbar:
 
         for epoch in range(1, num_epochs + 1):
-            running_loss = 0.0
+            running_loss, n = 0.0, 0
 
             net.train()
             for batch_num, (inputs, targets) in enumerate(train_loader):
@@ -54,8 +57,10 @@ def train_nn(net, train_loader, x_eval, y_eval, num_epochs, learning_rate, loss_
                 optimizer.step()
 
                 running_loss += loss.item()
+                n += 1
 
-                pbar.set_description("Epoch: %d, Batch: %2d, Loss: %.2f" % (epoch, batch_num, running_loss))
+                if batch_num % 100 == 0:
+                    pbar.set_description("Epoch: %d, Batch: %d, Loss: %.2f" % (epoch, batch_num, running_loss / n))
                 pbar.update()
             loss_hist.append(running_loss / len(train_loader))
             net.eval()
@@ -72,6 +77,7 @@ def train_nn(net, train_loader, x_eval, y_eval, num_epochs, learning_rate, loss_
 
 class InfluenceSampler(AbstractSampler):
     def __init__(self, num_samples: int):
+        super().__init__()
         self.index_sampler = IndexSampler()
         self.num_samples = num_samples
 
@@ -89,32 +95,20 @@ class Net(nn.Module):
     def __init__(self, in_features: int):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(in_features=in_features, out_features=64),
-            nn.Sigmoid(),
-            nn.Linear(in_features=64, out_features=128),
-            nn.Sigmoid(),
-            nn.Linear(in_features=128, out_features=512),
-            nn.Sigmoid(),
-            nn.Linear(in_features=512, out_features=2048),
-            nn.Sigmoid(),
-            nn.Linear(in_features=2048, out_features=512),
-            nn.Sigmoid(),
-            nn.Linear(in_features=512, out_features=128),
+            nn.Linear(in_features=in_features, out_features=128),
             nn.Sigmoid(),
             nn.Linear(in_features=128, out_features=128),
             nn.Sigmoid(),
-            nn.Linear(in_features=128, out_features=128),
-            nn.Sigmoid(),
-            nn.Linear(in_features=128, out_features=1),
+            nn.Linear(in_features=128, out_features=1)
         )
 
     def forward(self, x):
-        logits = self.net(x)
-        return logits
+        return self.net(x).view(-1)
 
 
 class FastIFSampler(AbstractSampler):
     def __init__(self, num_samples: int):
+        super().__init__()
         self.model = Net(in_features=13)  # HERE WILL BE THE TRAINED MODEL!!!
         if torch.cuda.is_available():
             self.model = self.model.cuda()
@@ -141,7 +135,17 @@ class FastIFSampler(AbstractSampler):
 
         num_epochs = kwargs['num_epochs']
         learning_rate = kwargs['learning_rate']
-        train_nn(self.model, batch_train_data_loader, x_eval, y_eval, num_epochs, learning_rate)
+        self.model = Net(in_features=x.shape[1])
+        if torch.cuda.is_available():
+            self.model = self.model.cuda()
+        loss_hist, eval_hist = train_nn(self.model, batch_train_data_loader, x_eval, y_eval, num_epochs, learning_rate)
+        root_path_to_metrics = kwargs['root_path_to_metrics']
+        plt.plot(range(len(loss_hist)), loss_hist)
+        plt.savefig(os.path.join(root_path_to_metrics, 'fastif_nn_train.png'))
+        plt.cla()
+        plt.plot(range(len(eval_hist)), eval_hist)
+        plt.savefig(os.path.join(root_path_to_metrics, 'fastif_nn_test'))
+        plt.cla()
 
         influences = np.zeros(shape=[num_examples_to_test, x.shape[0]])
         num_examples_tested = 0

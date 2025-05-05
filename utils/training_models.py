@@ -10,9 +10,9 @@ from .samplers import BaseSampler, RandomSampler, FastIFSampler, ShapleySampler
 
 SEED = 0
 SAMPLERS = {
+    'fastif': FastIFSampler,
     'base': BaseSampler,
     'random': RandomSampler,
-    'fastif': FastIFSampler,
     'shapley': ShapleySampler
 }
 
@@ -39,11 +39,12 @@ def train_model_and_calculate_metrics(root_path_to_data: str, data_type: str, sa
     if sampler_type in ['fastif', 'shapley']:
         kwargs['x_eval'] = x_test[:1000]
         kwargs['y_eval'] = y_test[:1000]
-        kwargs['num_epochs'] = 100
-        kwargs['learning_rate'] = 0.01
-        kwargs['batch_size'] = 256
+        kwargs['num_epochs'] = 200
+        kwargs['learning_rate'] = 1e-5
+        kwargs['batch_size'] = 4096
         kwargs['use_knn'] = True
         kwargs['verbose'] = True
+        kwargs['root_path_to_metrics'] = root_path_to_metrics
     #############
     x_train, y_train, _ = sampler(x_train, y_train, weight=np.ones_like(x_train), **kwargs)
 

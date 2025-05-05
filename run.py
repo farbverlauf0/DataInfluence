@@ -15,15 +15,20 @@ if __name__ == '__main__':
     parser.add_argument('--data-type')
     parser.add_argument('--sampler-type')
     parser.add_argument('--use-raw-data', action='store_true')
+    parser.add_argument('--noise-scaler', type=float, default=0.0)
     args = parser.parse_args()
     if args.use_raw_data:
         prepare_data(
             root_path_to_data=DATA_PATH,
-            data_type=args.data_type
+            data_type=args.data_type,
+            noise_scaler=args.noise_scaler
         )
+    else:
+        print('Specify --use-raw-data for the correct results')
     if args.sampler_type == 'all':
         all_losses = {'train': {}, 'test': {}}
         for sampler_type in SAMPLERS:
+            print(f'\n\nStarting sampler: {sampler_type}')
             losses = train_model_and_calculate_metrics(
                 root_path_to_data=DATA_PATH,
                 data_type=args.data_type,
