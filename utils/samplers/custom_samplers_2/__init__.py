@@ -22,7 +22,7 @@ class ShapleySampler(AbstractSampler):
             utility,
             mode=ShapleyMode.TruncatedMontecarlo,
             done=MaxUpdates(3),
-            n_jobs=-1,
+            n_jobs=1,
             progress=True
         )
 
