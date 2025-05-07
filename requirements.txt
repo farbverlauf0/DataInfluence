@@ -7,3 +7,4 @@ torch
 faiss-cpu
 pyDVL
 matplotlib
+tqdm

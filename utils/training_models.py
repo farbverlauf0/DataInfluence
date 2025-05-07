@@ -5,7 +5,7 @@ from catboost import CatBoostRegressor
 import optuna
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
-from .samplers import BaseSampler, RandomSampler, FastIFSampler, ShapleySampler
+from .samplers import BaseSampler, RandomSampler, FastIFSampler, ShapleySampler, RepresenterPointSampler
 
 
 SEED = 0
@@ -13,7 +13,8 @@ SAMPLERS = {
     'fastif': FastIFSampler,
     'base': BaseSampler,
     'random': RandomSampler,
-    'shapley': ShapleySampler
+    'shapley': ShapleySampler,
+    'representer': RepresenterPointSampler,
 }
 
 
@@ -36,7 +37,7 @@ def train_model_and_calculate_metrics(root_path_to_data: str, data_type: str, sa
     sampler = SAMPLERS[sampler_type](num_samples=num_samples)
     # NEEDS FIX #
     kwargs = {}
-    if sampler_type in ['fastif', 'shapley']:
+    if sampler_type in ['fastif', 'shapley', 'representer']:
         kwargs['x_eval'] = x_test[:1000]
         kwargs['y_eval'] = y_test[:1000]
         kwargs['num_epochs'] = 200
@@ -45,6 +46,7 @@ def train_model_and_calculate_metrics(root_path_to_data: str, data_type: str, sa
         kwargs['use_knn'] = True
         kwargs['verbose'] = True
         kwargs['root_path_to_metrics'] = root_path_to_metrics
+        kwargs['weight_decay'] = 1e-2
     #############
     x_train, y_train, _ = sampler(x_train, y_train, weight=np.ones_like(x_train), **kwargs)
 

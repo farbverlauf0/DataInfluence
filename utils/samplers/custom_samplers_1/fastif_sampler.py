@@ -31,14 +31,23 @@ def get_dataloader(x, y, batch_size=1, random=False):
     return DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
 
-def train_nn(net, train_loader, x_eval, y_eval, num_epochs, learning_rate, loss_function=None):
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+def train_nn(
+        net,
+        train_loader,
+        x_eval,
+        y_eval,
+        num_epochs,
+        learning_rate,
+        loss_function=None,
+        weight_decay=.0):
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
     loss_hist = []
     eval_hist = []
     if loss_function is None:
         loss_function = nn.MSELoss()
 
     with tqdm(total=len(train_loader) * num_epochs, position=0, leave=True) as pbar:
+        x_eval, y_eval = torch.tensor(x_eval, dtype=torch.float32), torch.tensor(y_eval)
 
         for epoch in range(1, num_epochs + 1):
             running_loss, n = 0.0, 0
@@ -65,7 +74,6 @@ def train_nn(net, train_loader, x_eval, y_eval, num_epochs, learning_rate, loss_
             loss_hist.append(running_loss / len(train_loader))
             net.eval()
             with torch.no_grad():
-                x_eval, y_eval = torch.tensor(x_eval, dtype=torch.float32), torch.tensor(y_eval)
                 if torch.cuda.is_available():
                     x_eval = x_eval.cuda()
                     y_eval = y_eval.cuda()
@@ -86,7 +94,7 @@ class InfluenceSampler(AbstractSampler):
             raise ValueError
 
         influences = kwargs["influences"]
-        index = sorted(range(x.shape[0]), key=lambda j: influences[j])[:self.num_samples]
+        index = np.argsort(influences)[:self.num_samples]
 
         return self.index_sampler(x, y, weight, index=index)
 
@@ -104,6 +112,16 @@ class Net(nn.Module):
 
     def forward(self, x):
         return self.net(x).view(-1)
+
+    def get_last_layer_input(self, x):
+        return self.net[:-1](x).clone().detach()
+
+    def run_through_last_layer(self, f):
+        return self.net[-1](f)
+
+    def freeze_all_but_last_layers(self):
+        for layer in self.net[:-1]:
+            layer.requires_grad = False
 
 
 class FastIFSampler(AbstractSampler):
@@ -181,9 +199,9 @@ class FastIFSampler(AbstractSampler):
 
             num_examples_tested += 1
 
-            if verbose and num_examples_tested % verbose_frequency:
+            if verbose and num_examples_tested % verbose_frequency == 0:
                 print(
-                    "Influences calculated for %d points of %d. Estimated time left: %.2f" %
+                    "Influences calculated for %d points of %d. Estimated time left: %.2f s" %
                       (num_examples_tested, num_examples_to_test,
                        (time.time() - begin)*(num_examples_to_test-num_examples_tested))
                 )

@@ -1,1 +1,2 @@
 from .fastif_sampler import FastIFSampler
+from .representer_point_sampler import RepresenterPointSampler
